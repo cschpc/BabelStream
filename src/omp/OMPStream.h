@@ -14,14 +14,28 @@
 
 #include <omp.h>
 
-#define IMPLEMENTATION_STRING "OpenMP"
+#if defined(AVX2_INTRINSICS)
+  #if defined(NON_TEMPORAL)
+    #define IMPLEMENTATION_STRING "OpenMP, AVX2 intrinsics with non-temp"
+  #else
+    #define IMPLEMENTATION_STRING "OpenMP, AVX2 intrinsics "
+  #endif
+#elif defined(AVX512_INTRINSICS)
+  #if defined(NON_TEMPORAL)
+    #define IMPLEMENTATION_STRING "OpenMP, AVX512 intrinsics with non-temp"
+  #else
+    #define IMPLEMENTATION_STRING "OpenMP, AVX512 intrinsics"
+  #endif
+#else
+   #define IMPLEMENTATION_STRING "OpenMP"
+#endif
 
 template <class T>
 class OMPStream : public Stream<T>
 {
   protected:
     // Size of arrays
-    int array_size;
+    size_t array_size;
 
     // Device side pointers
     T *a;
@@ -29,7 +43,7 @@ class OMPStream : public Stream<T>
     T *c;
 
   public:
-    OMPStream(const int, int);
+    OMPStream(const long, int);
     ~OMPStream();
 
     virtual void copy() override;
