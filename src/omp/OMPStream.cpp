@@ -278,7 +278,7 @@ void OMPStream<double>::mul()
 #if defined(AVX2_INTRINSICS)
   __m256d _scalar = _mm256_broadcast_sd(&scalar);
 #elif defined(AVX512_INTRINSICS)
-  __m512d _scalar = _mm512_broadcast_sd(&scalar);
+  __m512d _scalar = _mm512_set1_pd(scalar);
 #endif
 
   #pragma omp parallel for
@@ -346,7 +346,7 @@ void OMPStream<double>::triad()
 #if defined(AVX2_INTRINSICS)
   __m256d _scalar = _mm256_broadcast_sd(&scalar);
 #elif defined(AVX512_INTRINSICS)
-  __m512d _scalar = _mm512_broadcast_sd(&scalar);
+  __m512d _scalar = _mm512_set1_pd(scalar);
 #endif
 
   #pragma omp parallel for
@@ -395,10 +395,20 @@ double OMPStream<double>::dot()
   double sum{};
 
   #pragma omp parallel for reduction(+:sum)
-  for (int i = 0; i < array_size; i++)
+#if defined(AVX512_INTRINSICS)
+  for (size_t i = 0; i < array_size; i+=8)
+  {
+         __m512d _a = _mm512_loadu_pd(&a[i]);
+         __m512d _b = _mm512_loadu_pd(&b[i]);
+         __m512d _sum = _mm512_mul_pd(_a, _b);
+         sum +=  _mm512_reduce_add_pd(_sum);
+  }
+#else
+  for (size_t i = 0; i < array_size; i++)
   {
     sum += a[i] * b[i];
   }
+#endif
 
   return sum;
 }
